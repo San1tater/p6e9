@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026新春攤位活動 - 吉祥燈籠</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
+        }
+        
+        body {
+            overflow: hidden;
+            height: 100vh;
+            background-color: #0a0a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* 煙花背景 */
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+        
+        /* 標題 */
+        .title {
+            color: #FFD700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+            animation: glow 2s infinite alternate;
+        }
+        
+        .title h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            letter-spacing: 5px;
+        }
+        
+        .title p {
+            font-size: 1.2rem;
+            color: #FFEFBA;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 10px rgba(255, 215, 0, 0.7); }
+            to { text-shadow: 0 0 20px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.5); }
+        }
+        
+        /* 燈籠 */
+        .lantern {
+            width: 200px;
+            height: 260px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-bottom: 40px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .lantern:active {
+            transform: scale(0.95);
+        }
+        
+        .lantern-body {
+            width: 100%;
+            height: 200px;
+            background-color: #D62828;
+            border-radius: 100px 100px 50px 50px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(214, 40, 40, 0.7);
+        }
+        
+        .lantern-top, .lantern-bottom {
+            width: 110%;
+            height: 25px;
+            background-color: #FFD700;
+            position: absolute;
+            left: -5%;
+            border-radius: 10px;
+        }
+        
+        .lantern-top {
+            top: -10px;
+        }
+        
+        .lantern-bottom {
+            bottom: -10px;
+        }
+        
+        .lantern-tassel {
+            position: absolute;
+            bottom: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 60px;
+            background: linear-gradient(to bottom, #FFD700, #D62828);
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .lantern-tassel::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: -10px;
+            width: 25px;
+            height: 25px;
+            background-color: #FFD700;
+            border-radius: 50%;
+        }
+        
+        .lantern-pattern {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            color: #FFD700;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* 字條容器 */
+        .message-container {
+            position: absolute;
+            bottom: 120px;
+            width: 90%;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 3;
+            border: 3px solid #D62828;
+        }
+        
+        .message-title {
+            text-align: center;
+            color: #D62828;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        /* 文字遊戲區域 */
+        .word-game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .original-message {
+            display: none; /* 隐藏上方提示 */
+        }
+        
+        .shuffled-words {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .word {
+            font-size: 1.8rem;
+            padding: 15px 25px;
+            background-color: #FFD700;
+            color: #D62828;
+            border-radius: 10px;
+            cursor: grab;
+            user-select: none;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            min-width: 70px;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
+            touch-action: none; /* 禁用默认触摸行为，完全自定义 */
+        }
+        
+        .word:active {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .word.dragging {
+            opacity: 0.9;
+            transform: scale(1.1);
+            cursor: grabbing;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .word.locked {
+            cursor: not-allowed;
+            opacity: 0.5;
+            background-color: #ccc;
+        }
+        
+        .drop-zone {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .drop-slot {
+            width: 80px;
+            height: 80px;
+            border: 3px dashed #D62828;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            color: #0a0a2a;
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.8);
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .drop-slot.filled {
+            border-style: solid;
+            background-color: rgba(255, 215, 0, 0.2);
+        }
+        
+        /* 按鈕 */
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        .check-btn {
+            background-color: #D62828;
+            color: white;
+        }
+        
+        .check-btn:active {
+            background-color: #B71C1C;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(183, 28, 28, 0.4);
+        }
+        
+        .return-btn {
+            background-color: #0a0a2a;
+            color: #FFD700;
+            border: 2px solid #FFD700;
+        }
+        
+        .return-btn:active {
+            background-color: #FFD700;
+            color: #0a0a2a;
+            transform: translateY(-3px);
+        }
+        
+        /* 成功特效 */
+        .success-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 215, 0, 0.2);
+            z-index: 10;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .success-text {
+            font-size: 4rem;
+            color: #FFD700;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            margin-bottom: 30px;
+            animation: pulse 1s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        
+        .success-fireworks {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        
+        /* 說明文字 */
+        .instructions {
+            color: #FFEFBA;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1rem;
+            line-height: 1.6;
+            max-width: 600px;
+            background-color: rgba(10, 10, 42, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        /* 計時器 */
+        .timer {
+            color: #FFD700;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            background-color: rgba(10, 10, 42, 0.7);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 2px solid #FFD700;
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .title h1 {
+                font-size: 2rem;
+            }
+            
+            .lantern {
+                width: 150px;
+                height: 200px;
+            }
+            
+            .lantern-body {
+                height: 150px;
+                border-radius: 75px 75px 40px 40px;
+            }
+            
+            .message-container {
+                padding: 15px;
+                width: 95%;
+            }
+            
+            .word {
+                font-size: 1.5rem;
+                padding: 10px 15px;
+                min-width: 60px;
+            }
+            
+            .drop-slot {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .success-text {
+                font-size: 2.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .word {
+                font-size: 1.3rem;
+                padding: 8px 12px;
+                min-width: 50px;
+            }
+            
+            .drop-slot {
+                width: 50px;
+                height: 50px;
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 煙花背景畫布 -->
+    <canvas id="fireworks-canvas"></canvas>
+    
+    <!-- 主內容 -->
+    <div class="container">
+        <div class="title">
+            <h1>2026 新春吉祥燈籠</h1>
+            <p>點擊燈籠抽取新年祝福，重排文字獲得吉祥好運！</p>
+        </div>
+        
+        <!-- 燈籠 -->
+        <div class="lantern" id="lantern">
+            <div class="lantern-body">
+                <div class="lantern-top"></div>
+                <div class="lantern-bottom"></div>
+                <div class="lantern-pattern">福</div>
+            </div>
+            <div class="lantern-tassel"></div>
+        </div>
+        
+        <!-- 說明文字 -->
+        <div class="instructions">
+            <p>點擊上方燈籠隨機抽取四字祝福語，3秒後文字將被打亂，請拖動文字到正確位置組成祝福語。</p>
+            <p>排列正確將觸發成功特效！點擊「返回」按鈕可隨時回到主畫面。</p>
+        </div>
+        
+        <!-- 字條容器 -->
+        <div class="message-container" id="messageContainer">
+            <div class="message-title">新年祝福語</div>
+            <div class="timer" id="timer">3秒後文字將被打亂</div>
+            
+            <div class="word-game">
+                <div class="original-message" id="originalMessage"></div>
+                
+                <div class="shuffled-words" id="shuffledWords"></div>
+                
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-slot" data-index="0"></div>
+                    <div class="drop-slot" data-index="1"></div>
+                    <div class="drop-slot" data-index="2"></div>
+                    <div class="drop-slot" data-index="3"></div>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn check-btn" id="checkBtn">檢查答案</button>
+                    <button class="btn return-btn" id="returnBtn">返回</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 成功特效 -->
+        <div class="success-effect" id="successEffect">
+            <div class="success-text">恭喜！排列正確！</div>
+            <canvas class="success-fireworks" id="successFireworks"></canvas>
+            <button class="btn return-btn" id="successReturnBtn">返回</button>
+        </div>
+    </div>
+    
+    <script>
+        // 新年祝福語庫
+        const blessings = [
+            "恭賀新禧", "萬事如意", "財源廣進", "龍馬精神", 
+            "大吉大利", "年年有餘", "福星高照", "闔家平安",
+            "心想事成", "吉祥如意", "招財進寶", "步步高升",
+            "福壽雙全", "五福臨門", "喜氣洋洋", "金玉滿堂",
+            "福祿雙全", "富貴安康", "春風得意", "瑞氣盈門",
+            "鴻圖大展", "吉星高照", "迎春納福", "福虎生風",
+            "龍年吉祥", "好運連連", "新春快樂", "萬象更新"
+        ];
+        
+        // DOM元素
+        const lantern = document.getElementById('lantern');
+        const messageContainer = document.getElementById('messageContainer');
+        const originalMessage = document.getElementById('originalMessage');
+        const shuffledWords = document.getElementById('shuffledWords');
+        const dropZone = document.getElementById('dropZone');
+        const checkBtn = document.getElementById('checkBtn');
+        const returnBtn = document.getElementById('returnBtn');
+        const successEffect = document.getElementById('successEffect');
+        const successReturnBtn = document.getElementById('successReturnBtn');
+        const timerElement = document.getElementById('timer');
+        const fireworksCanvas = document.getElementById('fireworks-canvas');
+        const successFireworksCanvas = document.getElementById('successFireworks');
+        
+        // 遊戲變數
+        let currentBlessing = "";
+        let shuffledChars = [];
+        let dropSlots = Array(4).fill(null);
+        let isShuffled = false;
+        let countdownTimer = null;
+        let timeLeft = 3; // 修改为3秒
+        let fireworksActive = true;
+        let isDragging = false;
+        let draggedElement = null;
+        
+        // 初始化煙花背景
+        function initFireworks() {
+            const canvas = fireworksCanvas;
+            const ctx = canvas.getContext('2d');
+            
+            // 設置畫布尺寸
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 煙花粒子類
+            class Particle {
+                constructor(x, y, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.color = color;
+                    this.velocity = {
+                        x: (Math.random() - 0.5) * 10,
+                        y: (Math.random() - 0.5) * 10
+                    };
+                    this.alpha = 1;
+                    this.decay = Math.random() * 0.02 + 0.01;
+                    this.size = Math.random() * 3 + 1;
+                }
+                
+                update() {
+                    this.velocity.y += 0.05; // 重力
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    this.alpha -= this.decay;
+                    this.size *= 0.99;
+                }
+                
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.alpha;
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+            
+            // 煙花類
+            class Firework {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = canvas.height;
+                    this.targetY = Math.random() * canvas.height * 0.5;
+                    this.speed = Math.random() * 3 + 2;
+                    this.color = `hsl(${Math.random() * 60 + 10}, 100%, 60%)`;
+                    this.particles = [];
+                    this.exploded = false;
+                    this.radius = 0;
+                }
+                
+                update() {
+                    if (!this.exploded) {
+                        this.y -= this.speed;
+                        
+                        if (this.y <= this.targetY) {
+                            this.exploded = true;
+                            this.explode();
+                        }
+                    } else {
+                        // 爆炸效果
+                        if (this.radius < 50) {
+                            this.radius += 2;
+                        }
+                        
+                        // 更新粒子
+                        for (let i = 0; i < this.particles.length; i++) {
+                            this.particles[i].update();
+                            
+                            // 移除透明度為0的粒子
+                            if (this.particles[i].alpha <= 0) {
+                                this.particles.splice(i, 1);
+                                i--;
+                            }
+                        }
+                    }
+                }
+                
+                explode() {
+                    const particleCount = 100;
+                    for (let i = 0; i < particleCount; i++) {
+                        this.particles.push(new Particle(this.x, this.y, this.color));
+                    }
+                }
+                
+                draw() {
+                    if (!this.exploded) {
+                        ctx.save();
+                        ctx.fillStyle = this.color;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    } else {
+                        // 繪製爆炸圓環
+                        ctx.save();
+                        ctx.strokeStyle = this.color;
+                        ctx.globalAlpha = 0.5;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.restore();
+                        
+                        // 繪製粒子
+                        for (const particle of this.particles) {
+                            particle.draw();
+                        }
+                    }
+                }
+            }
+            
+            const fireworks = [];
+            
+            // 動畫循環
+            function animate() {
+                if (!fireworksActive) return;
+                
+                // 半透明黑色背景，創造拖尾效果
+                ctx.fillStyle = 'rgba(10, 10, 42, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 隨機生成新煙花
+                if (Math.random() < 0.05) {
+                    fireworks.push(new Firework());
+                }
+                
+                // 更新和繪製煙花
+                for (let i = 0; i < fireworks.length; i++) {
+                    fireworks[i].update();
+                    fireworks[i].draw();
+                    
+                    // 移除已經消失的煙花
+                    if (fireworks[i].exploded && fireworks[i].particles.length === 0 && fireworks[i].radius >= 50) {
+                        fireworks.splice(i, 1);
+                        i--;
+                    }
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+        
+        // 初始化成功特效煙花
+        function initSuccessFireworks() {
+            const canvas = successFireworksCanvas;
+            const ctx = canvas.getContext('2d');
+            
+            // 設置畫布尺寸
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 成功特效粒子類
+            class SuccessParticle {
+                constructor(x, y, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.color = color;
+                    this.velocity = {
+                        x: (Math.random() - 0.5) * 15,
+                        y: (Math.random() - 0.5) * 15
+                    };
+                    this.alpha = 1;
+                    this.decay = Math.random() * 0.01 + 0.005;
+                    this.size = Math.random() * 5 + 2;
+                    this.gravity = 0.02;
+                }
+                
+                update() {
+                    this.velocity.y += this.gravity;
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    this.alpha -= this.decay;
+                }
+                
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.alpha;
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+            
+            const particles = [];
+            const colors = ['#FFD700', '#FF4500', '#32CD32', '#1E90FF', '#FF1493'];
+            
+            // 創建大量粒子
+            function createExplosion(x, y) {
+                const particleCount = 300;
+                for (let i = 0; i < particleCount; i++) {
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    particles.push(new SuccessParticle(x, y, color));
+                }
+            }
+            
+            // 初始爆炸
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createExplosion(
+                        Math.random() * canvas.width,
+                        Math.random() * canvas.height
+                    );
+                }, i * 300);
+            }
+            
+            // 持續生成新爆炸
+            const explosionInterval = setInterval(() => {
+                createExplosion(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height * 0.8
+                );
+            }, 1000);
+            
+            // 動畫循環
+            function animate() {
+                ctx.fillStyle = 'rgba(10, 10, 42, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                    
+                    if (particles[i].alpha <= 0) {
+                        particles.splice(i, 1);
+                        i--;
+                    }
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+            
+            // 返回時清除間隔
+            successReturnBtn.addEventListener('click', () => {
+                clearInterval(explosionInterval);
+            });
+        }
+        
+        // 隨機選擇祝福語
+        function getRandomBlessing() {
+            const randomIndex = Math.floor(Math.random() * blessings.length);
+            return blessings[randomIndex];
+        }
+        
+        // 打亂文字順序
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+        
+        // 顯示祝福語
+        function showBlessing() {
+            // 停止背景煙花
+            fireworksActive = false;
+            
+            // 獲取隨機祝福語
+            currentBlessing = getRandomBlessing();
+            originalMessage.textContent = currentBlessing;
+            
+            // 顯示字條容器
+            messageContainer.style.display = 'block';
+            
+            // 初始化文字遊戲
+            initWordGame();
+            
+            // 啟動計時器
+            startCountdown();
+        }
+        
+        // 初始化文字遊戲
+        function initWordGame() {
+            // 清除現有內容
+            shuffledWords.innerHTML = '';
+            dropSlots = Array(4).fill(null);
+            
+            // 重置放置區
+            const dropSlotsElements = document.querySelectorAll('.drop-slot');
+            dropSlotsElements.forEach(slot => {
+                slot.textContent = '';
+                slot.classList.remove('filled');
+            });
+            
+            // 創建可拖動文字
+            const chars = currentBlessing.split('');
+            shuffledChars = [...chars];
+            
+            chars.forEach((char, index) => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word locked'; // 初始狀態鎖定
+                wordElement.textContent = char;
+                wordElement.dataset.index = index;
+                wordElement.dataset.char = char;
+                
+                // 添加觸控事件
+                addTouchEvents(wordElement);
+                
+                shuffledWords.appendChild(wordElement);
+            });
+            
+            isShuffled = false;
+            checkBtn.disabled = false;
+        }
+        
+        // 添加觸控事件
+        function addTouchEvents(element) {
+            // 觸控事件
+            element.addEventListener('touchstart', handleTouchStart, { passive: false });
+            element.addEventListener('touchmove', handleTouchMove, { passive: false });
+            element.addEventListener('touchend', handleTouchEnd, { passive: false });
+            element.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+            
+            // 防止拖動時選中文字
+            element.addEventListener('selectstart', (e) => e.preventDefault());
+        }
+        
+        // 觸控開始事件
+        function handleTouchStart(e) {
+            if (e.target.classList.contains('locked')) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            draggedElement = e.target;
+            
+            // 獲取元素當前位置
+            const rect = draggedElement.getBoundingClientRect();
+            
+            // 計算觸摸點相對於元素左上角的偏移
+            draggedElement.touchOffsetX = touch.clientX - rect.left;
+            draggedElement.touchOffsetY = touch.clientY - rect.top;
+            
+            isDragging = true;
+            
+            // 添加拖動樣式
+            draggedElement.classList.add('dragging');
+            
+            // 設置初始位置
+            updateElementPosition(touch.clientX, touch.clientY);
+        }
+        
+        // 觸控移動事件 - 使用requestAnimationFrame優化
+        function handleTouchMove(e) {
+            if (!isDragging || !draggedElement) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            
+            // 使用requestAnimationFrame確保流暢更新
+            requestAnimationFrame(() => {
+                updateElementPosition(touch.clientX, touch.clientY);
+            });
+        }
+        
+        // 更新元素位置 - 使用transform實現更流暢的動畫
+        function updateElementPosition(clientX, clientY) {
+            if (!draggedElement) return;
+            
+            // 計算元素新位置（使觸摸點位置保持不變）
+            const x = clientX - draggedElement.touchOffsetX;
+            const y = clientY - draggedElement.touchOffsetY;
+            
+            // 使用transform實現更流暢的移動
+            draggedElement.style.position = 'fixed';
+            draggedElement.style.left = '0';
+            draggedElement.style.top = '0';
+            draggedElement.style.transform = `translate(${x}px, ${y}px)`;
+            draggedElement.style.zIndex = '1000';
+            draggedElement.style.transition = 'none'; // 禁用過渡動畫，確保即時響應
+        }
+        
+        // 觸控結束事件
+        function handleTouchEnd(e) {
+            if (!isDragging || !draggedElement) return;
+            
+            e.preventDefault();
+            const touch = e.changedTouches[0] || e.touches[0];
+            
+            // 重置transform
+            draggedElement.style.transform = '';
+            draggedElement.style.transition = '';
+            
+            // 檢查是否放置在槽位上
+            const dropSlot = getDropSlotAtPosition(touch.clientX, touch.clientY);
+            
+            if (dropSlot) {
+                placeWordInSlot(draggedElement, dropSlot);
+            } else {
+                // 返回原位置
+                returnWordToPool(draggedElement);
+            }
+            
+            // 重置拖動狀態
+            draggedElement.classList.remove('dragging');
+            draggedElement.style.position = '';
+            draggedElement.style.left = '';
+            draggedElement.style.top = '';
+            draggedElement.style.zIndex = '';
+            
+            draggedElement = null;
+            isDragging = false;
+        }
+        
+        // 獲取指定位置的放置槽
+        function getDropSlotAtPosition(x, y) {
+            const dropSlots = document.querySelectorAll('.drop-slot');
+            
+            for (const slot of dropSlots) {
+                const rect = slot.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                    return slot;
+                }
+            }
+            return null;
+        }
+        
+        // 將文字放入放置槽
+        function placeWordInSlot(wordElement, dropSlot) {
+            const slotIndex = parseInt(dropSlot.dataset.index);
+            const char = wordElement.dataset.char;
+            
+            // 如果該位置已經有文字，則先移除
+            if (dropSlots[slotIndex]) {
+                returnWordToSlot(slotIndex);
+            }
+            
+            // 放置文字到槽位
+            dropSlot.textContent = char;
+            dropSlot.classList.add('filled');
+            dropSlots[slotIndex] = char;
+            
+            // 隱藏原始文字元素
+            wordElement.style.display = 'none';
+        }
+        
+        // 將文字從槽位返回字池
+        function returnWordToSlot(slotIndex) {
+            const char = dropSlots[slotIndex];
+            if (!char) return;
+            
+            // 顯示對應的文字元素
+            const wordElements = document.querySelectorAll('.word');
+            for (const wordElement of wordElements) {
+                if (wordElement.dataset.char === char && wordElement.style.display === 'none') {
+                    wordElement.style.display = '';
+                    break;
+                }
+            }
+            
+            // 清除槽位
+            const slot = document.querySelector(`.drop-slot[data-index="${slotIndex}"]`);
+            slot.textContent = '';
+            slot.classList.remove('filled');
+            dropSlots[slotIndex] = null;
+        }
+        
+        // 將文字返回字池
+        function returnWordToPool(wordElement) {
+            // 重置位置和顯示
+            wordElement.style.display = '';
+            wordElement.style.position = '';
+            wordElement.style.left = '';
+            wordElement.style.top = '';
+            wordElement.style.transform = '';
+            wordElement.style.zIndex = '';
+        }
+        
+        // 開始倒計時
+        function startCountdown() {
+            timeLeft = 3; // 修改为3秒
+            timerElement.textContent = `${timeLeft}秒後文字將被打亂`;
+            
+            if (countdownTimer) clearInterval(countdownTimer);
+            
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = `${timeLeft}秒後文字將被打亂`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    shuffleWords();
+                }
+            }, 1000);
+        }
+        
+        // 打亂文字
+        function shuffleWords() {
+            if (isShuffled) return;
+            
+            // 打亂文字順序
+            shuffledChars = shuffleArray(shuffledChars);
+            
+            // 更新顯示
+            shuffledWords.innerHTML = '';
+            shuffledChars.forEach((char, index) => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word'; // 移除locked類，允許拖動
+                wordElement.textContent = char;
+                wordElement.dataset.index = index;
+                wordElement.dataset.char = char;
+                
+                // 添加觸控事件
+                addTouchEvents(wordElement);
+                
+                shuffledWords.appendChild(wordElement);
+            });
+            
+            timerElement.textContent = "文字已打亂！請拖動文字到正確位置";
+            timerElement.style.color = "#D62828";
+            isShuffled = true;
+        }
+        
+        // 檢查答案
+        function checkAnswer() {
+            const userAnswer = dropSlots.join('');
+            const correctAnswer = currentBlessing;
+            
+            if (userAnswer === correctAnswer) {
+                showSuccessEffect();
+            } else {
+                alert('答案不正確，請再試一次！');
+            }
+        }
+        
+        // 顯示成功特效
+        function showSuccessEffect() {
+            successEffect.style.display = 'flex';
+            initSuccessFireworks();
+        }
+        
+        // 返回主頁
+        function returnToMain() {
+            // 隱藏字條容器和成功特效
+            messageContainer.style.display = 'none';
+            successEffect.style.display = 'none';
+            
+            // 清除計時器
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+            
+            // 重置變數
+            currentBlessing = "";
+            shuffledChars = [];
+            dropSlots = Array(4).fill(null);
+            isShuffled = false;
+            timeLeft = 3; // 修改为3秒
+            draggedElement = null;
+            isDragging = false;
+            
+            // 重新開始背景煙花
+            fireworksActive = true;
+            initFireworks();
+        }
+        
+        // 事件監聽
+        lantern.addEventListener('click', showBlessing);
+        lantern.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            showBlessing();
+        }, { passive: false });
+        
+        checkBtn.addEventListener('click', checkAnswer);
+        checkBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            checkAnswer();
+        }, { passive: false });
+        
+        returnBtn.addEventListener('click', returnToMain);
+        returnBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            returnToMain();
+        }, { passive: false });
+        
+        successReturnBtn.addEventListener('click', returnToMain);
+        successReturnBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            returnToMain();
+        }, { passive: false });
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initFireworks();
+        });
+        
+        // 防止頁面滾動
+        document.addEventListener('touchmove', function(e) {
+            if (isDragging) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
