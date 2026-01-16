@@ -943,44 +943,10 @@
             retryBtn.style.display = 'none';
             
             // 重新初始化文字遊戲（使用相同的祝福語）
-            resetWordGame();
+            retryWordGame();
             
             // 啟動計時器
             startCountdown();
-        }
-        
-        // 重置文字遊戲（保持相同祝福語）
-        function resetWordGame() {
-            // 清除現有內容
-            shuffledWords.innerHTML = '';
-            dropSlots = Array(4).fill(null);
-            
-            // 重置放置區
-            const dropSlotsElements = document.querySelectorAll('.drop-slot');
-            dropSlotsElements.forEach(slot => {
-                slot.textContent = '';
-                slot.classList.remove('filled');
-            });
-            
-            // 重新打亂文字
-            shuffledChars = shuffleArray([...originalChars]);
-            
-            // 創建可拖動文字
-            shuffledChars.forEach((char, index) => {
-                const wordElement = document.createElement('div');
-                wordElement.className = 'word locked'; // 初始狀態鎖定
-                wordElement.textContent = char;
-                wordElement.dataset.index = index;
-                wordElement.dataset.char = char;
-                
-                // 添加觸控事件
-                addTouchEvents(wordElement);
-                
-                shuffledWords.appendChild(wordElement);
-            });
-            
-            isShuffled = false;
-            checkBtn.disabled = false;
         }
         
         // 初始化文字遊戲
@@ -1016,6 +982,44 @@
             
             isShuffled = false;
             checkBtn.disabled = false;
+        }
+        
+        // 重新嘗試文字遊戲（先顯示正確答案，3秒後打亂）
+        function retryWordGame() {
+            // 清除現有內容
+            shuffledWords.innerHTML = '';
+            dropSlots = Array(4).fill(null);
+            
+            // 重置放置區
+            const dropSlotsElements = document.querySelectorAll('.drop-slot');
+            dropSlotsElements.forEach(slot => {
+                slot.textContent = '';
+                slot.classList.remove('filled');
+            });
+            
+            // 先顯示正確答案（按正確順序）
+            shuffledChars = [...originalChars];
+            
+            // 創建文字元素（鎖定狀態，不允許拖動）
+            shuffledChars.forEach((char, index) => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word locked'; // 鎖定狀態
+                wordElement.textContent = char;
+                wordElement.dataset.index = index;
+                wordElement.dataset.char = char;
+                
+                // 添加觸控事件（雖然鎖定，但添加事件以便之後解鎖）
+                addTouchEvents(wordElement);
+                
+                shuffledWords.appendChild(wordElement);
+            });
+            
+            isShuffled = false;
+            checkBtn.disabled = false;
+            
+            // 更新計時器顯示
+            timerElement.textContent = "3秒後文字將被打亂";
+            timerElement.style.color = "#FFD700";
         }
         
         // 添加觸控事件
