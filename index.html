@@ -284,6 +284,19 @@
             box-shadow: 0 5px 15px rgba(183, 28, 28, 0.4);
         }
         
+        .retry-btn {
+            background-color: #0a0a2a;
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            display: none; /* 初始隐藏 */
+        }
+        
+        .retry-btn:active {
+            background-color: #FFD700;
+            color: #0a0a2a;
+            transform: translateY(-3px);
+        }
+        
         .return-btn {
             background-color: #0a0a2a;
             color: #FFD700;
@@ -332,6 +345,71 @@
             top: 0;
             left: 0;
             z-index: -1;
+        }
+        
+        /* 錯誤提示模態彈窗 */
+        .error-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(10, 10, 42, 0.9);
+            z-index: 20;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .error-content {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border: 5px solid #D62828;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+        }
+        
+        .error-icon {
+            font-size: 5rem;
+            color: #D62828;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite alternate;
+        }
+        
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+        
+        .error-text {
+            font-size: 2rem;
+            color: #0a0a2a;
+            margin-bottom: 30px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+        
+        .error-btn {
+            background-color: #D62828;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .error-btn:active {
+            background-color: #B71C1C;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(183, 28, 28, 0.4);
         }
         
         /* 說明文字 */
@@ -395,6 +473,23 @@
             .success-text {
                 font-size: 2.5rem;
             }
+            
+            .error-content {
+                padding: 30px 20px;
+            }
+            
+            .error-icon {
+                font-size: 4rem;
+            }
+            
+            .error-text {
+                font-size: 1.6rem;
+            }
+            
+            .error-btn {
+                padding: 12px 30px;
+                font-size: 1.1rem;
+            }
         }
         
         @media (max-width: 480px) {
@@ -408,6 +503,23 @@
                 width: 50px;
                 height: 50px;
                 font-size: 1.3rem;
+            }
+            
+            .error-content {
+                padding: 25px 15px;
+            }
+            
+            .error-icon {
+                font-size: 3.5rem;
+            }
+            
+            .error-text {
+                font-size: 1.4rem;
+            }
+            
+            .error-btn {
+                padding: 10px 25px;
+                font-size: 1rem;
             }
         }
     </style>
@@ -458,6 +570,7 @@
                 
                 <div class="buttons">
                     <button class="btn check-btn" id="checkBtn">檢查答案</button>
+                    <button class="btn retry-btn" id="retryBtn">重新嘗試</button>
                     <button class="btn return-btn" id="returnBtn">返回</button>
                 </div>
             </div>
@@ -468,6 +581,15 @@
             <div class="success-text">恭喜！排列正確！</div>
             <canvas class="success-fireworks" id="successFireworks"></canvas>
             <button class="btn return-btn" id="successReturnBtn">返回</button>
+        </div>
+        
+        <!-- 錯誤提示模態彈窗 -->
+        <div class="error-modal" id="errorModal">
+            <div class="error-content">
+                <div class="error-icon">😊</div>
+                <div class="error-text">沒關係，再試一次吧！</div>
+                <button class="error-btn" id="closeErrorBtn">確定</button>
+            </div>
         </div>
     </div>
     
@@ -490,10 +612,13 @@
         const shuffledWords = document.getElementById('shuffledWords');
         const dropZone = document.getElementById('dropZone');
         const checkBtn = document.getElementById('checkBtn');
+        const retryBtn = document.getElementById('retryBtn');
         const returnBtn = document.getElementById('returnBtn');
         const successEffect = document.getElementById('successEffect');
         const successReturnBtn = document.getElementById('successReturnBtn');
         const timerElement = document.getElementById('timer');
+        const errorModal = document.getElementById('errorModal');
+        const closeErrorBtn = document.getElementById('closeErrorBtn');
         const fireworksCanvas = document.getElementById('fireworks-canvas');
         const successFireworksCanvas = document.getElementById('successFireworks');
         
@@ -503,10 +628,11 @@
         let dropSlots = Array(4).fill(null);
         let isShuffled = false;
         let countdownTimer = null;
-        let timeLeft = 3; // 修改为3秒
+        let timeLeft = 3;
         let fireworksActive = true;
         let isDragging = false;
         let draggedElement = null;
+        let originalChars = []; // 保存原始文字順序，用於重新嘗試
         
         // 初始化煙花背景
         function initFireworks() {
@@ -791,6 +917,7 @@
             // 獲取隨機祝福語
             currentBlessing = getRandomBlessing();
             originalMessage.textContent = currentBlessing;
+            originalChars = currentBlessing.split(''); // 保存原始文字
             
             // 顯示字條容器
             messageContainer.style.display = 'block';
@@ -800,6 +927,60 @@
             
             // 啟動計時器
             startCountdown();
+            
+            // 確保按鈕顯示正確狀態
+            checkBtn.style.display = 'block';
+            retryBtn.style.display = 'none';
+        }
+        
+        // 重新嘗試當前題目
+        function retryCurrentBlessing() {
+            // 隱藏錯誤模態彈窗
+            errorModal.style.display = 'none';
+            
+            // 重置按鈕狀態
+            checkBtn.style.display = 'block';
+            retryBtn.style.display = 'none';
+            
+            // 重新初始化文字遊戲（使用相同的祝福語）
+            resetWordGame();
+            
+            // 啟動計時器
+            startCountdown();
+        }
+        
+        // 重置文字遊戲（保持相同祝福語）
+        function resetWordGame() {
+            // 清除現有內容
+            shuffledWords.innerHTML = '';
+            dropSlots = Array(4).fill(null);
+            
+            // 重置放置區
+            const dropSlotsElements = document.querySelectorAll('.drop-slot');
+            dropSlotsElements.forEach(slot => {
+                slot.textContent = '';
+                slot.classList.remove('filled');
+            });
+            
+            // 重新打亂文字
+            shuffledChars = shuffleArray([...originalChars]);
+            
+            // 創建可拖動文字
+            shuffledChars.forEach((char, index) => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word locked'; // 初始狀態鎖定
+                wordElement.textContent = char;
+                wordElement.dataset.index = index;
+                wordElement.dataset.char = char;
+                
+                // 添加觸控事件
+                addTouchEvents(wordElement);
+                
+                shuffledWords.appendChild(wordElement);
+            });
+            
+            isShuffled = false;
+            checkBtn.disabled = false;
         }
         
         // 初始化文字遊戲
@@ -818,6 +999,7 @@
             // 創建可拖動文字
             const chars = currentBlessing.split('');
             shuffledChars = [...chars];
+            originalChars = [...chars]; // 保存原始文字
             
             chars.forEach((char, index) => {
                 const wordElement = document.createElement('div');
@@ -1000,7 +1182,7 @@
         
         // 開始倒計時
         function startCountdown() {
-            timeLeft = 3; // 修改为3秒
+            timeLeft = 3;
             timerElement.textContent = `${timeLeft}秒後文字將被打亂`;
             
             if (countdownTimer) clearInterval(countdownTimer);
@@ -1051,7 +1233,12 @@
             if (userAnswer === correctAnswer) {
                 showSuccessEffect();
             } else {
-                alert('答案不正確，請再試一次！');
+                // 顯示錯誤模態彈窗
+                errorModal.style.display = 'flex';
+                
+                // 切換按鈕：隱藏檢查答案按鈕，顯示重新嘗試按鈕
+                checkBtn.style.display = 'none';
+                retryBtn.style.display = 'block';
             }
         }
         
@@ -1066,6 +1253,7 @@
             // 隱藏字條容器和成功特效
             messageContainer.style.display = 'none';
             successEffect.style.display = 'none';
+            errorModal.style.display = 'none';
             
             // 清除計時器
             if (countdownTimer) {
@@ -1078,9 +1266,13 @@
             shuffledChars = [];
             dropSlots = Array(4).fill(null);
             isShuffled = false;
-            timeLeft = 3; // 修改为3秒
+            timeLeft = 3;
             draggedElement = null;
             isDragging = false;
+            
+            // 重置按鈕狀態
+            checkBtn.style.display = 'block';
+            retryBtn.style.display = 'none';
             
             // 重新開始背景煙花
             fireworksActive = true;
@@ -1100,6 +1292,12 @@
             checkAnswer();
         }, { passive: false });
         
+        retryBtn.addEventListener('click', retryCurrentBlessing);
+        retryBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            retryCurrentBlessing();
+        }, { passive: false });
+        
         returnBtn.addEventListener('click', returnToMain);
         returnBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -1111,6 +1309,22 @@
             e.preventDefault();
             returnToMain();
         }, { passive: false });
+        
+        closeErrorBtn.addEventListener('click', () => {
+            errorModal.style.display = 'none';
+        });
+        
+        closeErrorBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            errorModal.style.display = 'none';
+        }, { passive: false });
+        
+        // 點擊錯誤模態彈窗背景也可以關閉
+        errorModal.addEventListener('click', (e) => {
+            if (e.target === errorModal) {
+                errorModal.style.display = 'none';
+            }
+        });
         
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
